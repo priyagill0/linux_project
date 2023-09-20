@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+flag=$1
+coursenum=$2
+if [ $1 == "-num" ]
+then
+# loop through courses
+  while IFS=$'!' read -r cnum cname cisbn ro;
+  do
+    if [ $cnum == $coursenum ]
+    then
+     # loop through books
+      while IFS=$'!' read -r title isbn auth1 numcop;
+      do
+        if [ $cisbn == $isbn ]
+        then
+		# Use sed command to replace all occurance of '!' with a space in numcop
+                    numcop_modified=$(echo "$numcop" | sed 's/!/ /g')
+                    echo "$title: $auth1 $numcop_modified"
+        fi
+      done < "Books"
+    fi
+  done < "Courses"
+fi
+
+if [[ $1 == "-nobook" ]]; then
+
+required=false;
+
+ while IFS='!' read -r courseNumber courseName ISBN textbook; do
+   if [[ $textbook == "O" ]]; then
+     #loop again to check for any instrance of the courses where it is required...
+     while IFS='!' read -r reqCourseNumber reqCourseName reqISBN reqTextbook; do
+	 # if textbook is required and course code is matched, do not output.
+         if [[ $reqTextbook == "R" && $reqCourseNumber==$courseNumber ]]; then
+               required=true;
+	       break; 
+         fi
+     done < "Courses"
+     if [[ $required == false ]]; then
+        echo $courseNumber;
+     fi  
+  fi
+ done < "Courses"
+
+fi
+
+if [[ $1 == "-toomuch" ]]; then
+  touch repeatCourses.txt; 
+  count=0
+   
+   while IFS='!' read -r courseNumber courseName ISBN textbook; do
+    
+     if [[ $textbook == "R" ]]; then
+
+    	 while IFS='!' read -r courseNumber_2 courseName_2 ISBN_2 textbook_2; do
+            if [[ $courseNumber == $courseNumber_2 && $textbook_2 == "R" ]]; then
+		    ((count++))
+            fi
+	 done < "Courses"
+	 
+	 if [[ count -gt 2 ]]; then
+		 if [[ ! $(grep "$courseNumber" "repeatCourses.txt") ]]; then
+                     echo "$courseNumber"
+                     echo "$courseNumber" >> "repeatCourses.txt"
+	     	 fi
+         fi
+	 count=0
+    fi
+  
+   done < "Courses"
+   rm repeatCourses.txt;
+fi
